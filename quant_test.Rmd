@@ -1,0 +1,61 @@
+---
+title: "Quant Test Notebook"
+output:
+  word_document: default
+  html_notebook: default
+---
+ Before getting into details we would want to substantiate why we want multiple rolling windows or as statistics calls them moving averages. This method addresses volitilty and removes cyclic patterns. It also allows a clear look at trends and long term patterns as well as changes in the structure, sudden shifts called regime change, without getting hung up on the well understoood structures of noise and smaller cycles. These smaller cycles and noise want to added back in later for projection or forecast. 
+Given the assignment is windowing and design matrices for input into an algorithm
+I would argue using ARIMA (Auto Regressive Integrated Moving Average) a time series tool that has those windows already built in as well and the design matrix and model forecasting is a good way to start.
+
+We aim for out model to be 
+[t] = a[1]X[t-1] + Noise
+
+```{r}
+#some libs and data
+library(dplyr)
+library(forecast)
+ds_test_data <- read.csv("~/APSQuant/ds_test_data.csv", header=TRUE)
+ds_test<- select(ds_test_data, c(2,3,5,6))
+#could select training and testing sets by using window(ds_test, start = 1, end = 20) or #similar
+#make timeseries object and check it
+ds_x <- ts(ds_test_data$GALAXY_S8,  start = 1,frequency = 1)
+
+ds_matrix <- ts(ds_test,  start = 1,frequency = 1)
+
+#head(ds_matrix)
+plot.ts(ds_matrix)
+
+
+
+
+
+```
+
+```{r}
+ds_arima_tune <- auto.arima(ds_x, xreg = ds_matrix)
+
+summary(ds_arima_tune)
+```
+
+```{r}
+plot.ts(ds_arima_tune$residuals)
+qqnorm(ds_arima_tune$residuals)
+acf(ds_arima_tune$residuals)
+```
+
+Here if we were actually fitting this model we'd be doing
+phone_ahead = forecast(ds_arima_tune, h=20)
+plot.forecast(phone_ahead)
+But that's not what this is about
+```{r}
+ds_gs8 = auto.arima(ds_x)
+summary(ds_gs8)
+```
+```{r}
+ds_ar <- Arima(ds_x,order = c(1, 1, 0), seasonal = c(0, 0, 0), xreg = ds_matrix)
+summary(ds_ar)
+```
+
+
+Add 
