@@ -4,13 +4,20 @@ output:
   word_document: default
   html_notebook: default
 ---
- Before getting into details we would want to substantiate why we want multiple rolling windows or as statistics calls them moving averages. This method addresses volitilty and removes cyclic patterns. It also allows a clear look at trends and long term patterns as well as changes in the structure, sudden shifts called regime change, without getting hung up on the well understoood structures of noise and smaller cycles. These smaller cycles and noise want to added back in later for projection or forecast. 
+ Before getting into details we would want to substantiate why we want rolling windows or as statistics calls them moving averages. This method addresses volitilty and removes cyclic patterns. It also allows a clear look at trends and long term patterns as well as changes in the structure, sudden shifts called regime change, without getting hung up on the well understoood structures of noise and smaller cycles. These smaller cycles and noise want to added back in later for projection or forecast. 
 Given the assignment is windowing and design matrices for input into an algorithm
 I would argue using ARIMA (Auto Regressive Integrated Moving Average) a time series tool that has those windows already built in as well and the design matrix and model forecasting is a good way to start.
 
-We aim for out model to be 
-[t] = a[1]X[t-1] + Noise
+We aim for our model to be today is tomorrow plus trend plus noise at the time for each N
+y[t] = a[1]y[t-1] + Trend + Noise[t]
+for each time series N we want to forecast and utilizing the work of Box-Jenkins we want to start with an ARIMA (1,1,1) without a constant, formulated as
 
+y[t] = Y[t]-Y[t-1]
+y[t] = phi[1]y[t-1] + e[t] - theta[1]e[t] 
+where e[t] is the random noise also called shock, happening at time t;
+phi[t] is the AR[1] coeffient; theta[1] is the MA coeffient.
+
+ 
 ```{r}
 #some libs and data
 library(dplyr)
@@ -24,38 +31,63 @@ ds_x <- ts(ds_test_data$GALAXY_S8,  start = 1,frequency = 1)
 ds_matrix <- ts(ds_test,  start = 1,frequency = 1)
 
 #head(ds_matrix)
+
 plot.ts(ds_matrix)
 
 
-
-
-
 ```
 
+From the above we can describe the data as most peaking with a regime change at 15 and a decreasing tail. The galaxy S8 timeserries differs with a slow build and late peak almost as if it had had its time reversed from the rest of the set.
 ```{r}
-ds_arima_tune <- auto.arima(ds_x, xreg = ds_matrix)
-
-summary(ds_arima_tune)
+plot.ts(ds_x)
 ```
 
-```{r}
-plot.ts(ds_arima_tune$residuals)
-qqnorm(ds_arima_tune$residuals)
-acf(ds_arima_tune$residuals)
-```
+Then for each N one would plot autocorrelation and partial autocorrelation; auto tune and test an ARIMA model for n in N. 
 
-Here if we were actually fitting this model we'd be doing
-phone_ahead = forecast(ds_arima_tune, h=20)
-plot.forecast(phone_ahead)
-But that's not what this is about
 ```{r}
+
+
 ds_gs8 = auto.arima(ds_x)
 summary(ds_gs8)
+
+
 ```
+
 ```{r}
-ds_ar <- Arima(ds_x,order = c(1, 1, 0), seasonal = c(0, 0, 0), xreg = ds_matrix)
-summary(ds_ar)
+pacf(ds_x)
 ```
+
+```{r}
+acf(ds_x)
+```
+
+```{r}
+ds_arima_all <- auto.arima(ds_x, xreg = ds_matrix)
+
+summary(ds_arima_all)
+```
+
+```{r}
+plot.ts(ds_arima_all$residuals)
+
+
+```
+
+```{r}
+acf(ds_arima_all$residuals)
+```
+
+```{r}
+qqnorm(ds_arima_all$residuals)
+```
+
+Here if we were actually forecasting this model we'd be doing
+phone_ahead = forecast(ds_x, h=5)
+plot.forecast(phone_ahead)
+However, Let me stop here and point out that there are many models within time series analysis that could be quite interesting and a better fit for the work proposed. In particular VAR and VARIMA for multivariate modelling with timeseries. These ares introduce with the possibility of IRF(interoduced shock or noise) to test covariance.
+
+Once one had decided on a best fit and method for each n in N you can train and test each model. 
+
 
 
 Add 
